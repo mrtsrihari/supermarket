@@ -9,8 +9,22 @@ import java.util.List;
 
 public class CustomerDAO {
 
+    public CustomerDAO() {
+        ensureLoyaltyColumn();
+    }
+
+    private void ensureLoyaltyColumn() {
+        String sql = "ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INT DEFAULT 0";
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException ignored) {
+            // Column may already exist
+        }
+    }
+
     public int addCustomer(Customer customer) {
-        String sql = "INSERT INTO customers (name, phone, email, is_member) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO customers (name, phone, email, is_member, loyalty_points) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -19,6 +33,7 @@ public class CustomerDAO {
             stmt.setString(2, customer.getPhone());
             stmt.setString(3, customer.getEmail());
             stmt.setBoolean(4, customer.isMember());
+            stmt.setInt(5, customer.getLoyaltyPoints());
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -35,7 +50,7 @@ public class CustomerDAO {
     }
 
     public Customer getCustomerById(int customerId) {
-        String sql = "SELECT customer_id, name, phone, email, is_member FROM customers WHERE customer_id = ?";
+        String sql = "SELECT customer_id, name, phone, email, is_member, loyalty_points FROM customers WHERE customer_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -48,7 +63,8 @@ public class CustomerDAO {
                             rs.getString("name"),
                             rs.getString("phone"),
                             rs.getString("email"),
-                            rs.getBoolean("is_member")
+                            rs.getBoolean("is_member"),
+                            rs.getInt("loyalty_points")
                     );
                 }
             }
@@ -60,7 +76,7 @@ public class CustomerDAO {
 
     public List<Customer> getAllCustomers() {
         List<Customer> list = new ArrayList<>();
-        String sql = "SELECT customer_id, name, phone, email, is_member FROM customers ORDER BY customer_id";
+        String sql = "SELECT customer_id, name, phone, email, is_member, loyalty_points FROM customers ORDER BY customer_id";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -72,13 +88,28 @@ public class CustomerDAO {
                         rs.getString("name"),
                         rs.getString("phone"),
                         rs.getString("email"),
-                        rs.getBoolean("is_member")
+                        rs.getBoolean("is_member"),
+                        rs.getInt("loyalty_points")
                 ));
             }
         } catch (SQLException e) {
             System.err.println("Error fetching customers: " + e.getMessage());
         }
         return list;
+    }
+
+    public boolean addLoyaltyPoints(int customerId, int points) {
+        if (points <= 0) return false;
+        String sql = "UPDATE customers SET loyalty_points = loyalty_points + ? WHERE customer_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, points);
+            stmt.setInt(2, customerId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating loyalty points: " + e.getMessage());
+            return false;
+        }
     }
 
     public int getCustomerCount() {
@@ -95,4 +126,3 @@ public class CustomerDAO {
         return 0;
     }
 }
-

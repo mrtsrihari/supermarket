@@ -133,8 +133,7 @@ public class Supermarket {
             tax += (amount - discount) * product.getTaxRate();
         }
 
-        double memberDiscount = customer.isMember()
-                ? (subtotal - productDiscount) * MEMBER_DISCOUNT : 0.0;
+        double memberDiscount = (subtotal - productDiscount) * customer.getMemberDiscountRate();
         double totalDiscount = productDiscount + memberDiscount;
         double total = subtotal - totalDiscount + tax;
 
@@ -145,6 +144,11 @@ public class Supermarket {
         boolean saved = invoiceDAO.saveInvoice(invoice);
         if (saved) {
             System.out.println("✓ Bill recorded to MySQL database (Invoice #" + invoice.getInvoiceNumber() + ").");
+            int earnedPoints = (int) (total / 100);
+            if (earnedPoints > 0) {
+                customerDAO.addLoyaltyPoints(customer.getCustomerId(), earnedPoints);
+                System.out.println("★ Customer earned " + earnedPoints + " loyalty points on this purchase!");
+            }
         } else {
             System.err.println("⚠ Failed to record bill to MySQL database.");
         }

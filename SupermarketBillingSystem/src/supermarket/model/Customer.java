@@ -8,17 +8,23 @@ public class Customer {
     private String phone;
     private String email;
     private boolean member;
+    private int loyaltyPoints;
 
     public Customer(int customerId, String name, String phone, String email, boolean member) {
+        this(customerId, name, phone, email, member, 0);
+    }
+
+    public Customer(int customerId, String name, String phone, String email, boolean member, int loyaltyPoints) {
         this.customerId = customerId;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.member = member;
+        this.loyaltyPoints = loyaltyPoints;
     }
 
     public Customer(String name, String phone, String email, boolean member) {
-        this(0, name, phone, email, member);
+        this(0, name, phone, email, member, 0);
     }
 
     public int getCustomerId() { return customerId; }
@@ -36,6 +42,24 @@ public class Customer {
     public boolean isMember() { return member; }
     public void setMember(boolean member) { this.member = member; }
 
+    public int getLoyaltyPoints() { return loyaltyPoints; }
+    public void setLoyaltyPoints(int loyaltyPoints) { this.loyaltyPoints = loyaltyPoints; }
+    public void addLoyaltyPoints(int points) { if (points > 0) this.loyaltyPoints += points; }
+
+    public String getMembershipTier() {
+        if (loyaltyPoints >= 500) return "Platinum (10% Tier Discount)";
+        if (loyaltyPoints >= 200) return "Gold (7% Tier Discount)";
+        if (member) return "Silver (5% Member Discount)";
+        return "Standard";
+    }
+
+    public double getMemberDiscountRate() {
+        if (loyaltyPoints >= 500) return 0.10;
+        if (loyaltyPoints >= 200) return 0.07;
+        if (member) return 0.05;
+        return 0.0;
+    }
+
     public boolean isValidPhone() {
         return phone != null && Pattern.matches("[6-9][0-9]{9}", phone);
     }
@@ -46,6 +70,7 @@ public class Customer {
 
     @Override
     public String toString() {
-        return customerId + " | " + name + " | " + phone + " | " + email + " | Member: " + member;
+        return String.format("%-6d | %-16s | %-12s | %-24s | Tier: %-10s | Points: %d",
+                customerId, name, phone, email, getMembershipTier(), loyaltyPoints);
     }
 }
