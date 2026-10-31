@@ -169,5 +169,47 @@ public class InvoiceDAO {
         }
         return list;
     }
+
+    public List<String> getTopSellingProducts(int limit) {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT product_name, SUM(quantity) AS total_units, SUM(total_price) AS total_revenue " +
+                     "FROM invoice_items " +
+                     "GROUP BY product_name " +
+                     "ORDER BY total_units DESC LIMIT ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, limit);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(String.format("%-20s Sold: %-4d Revenue: ₹%.2f",
+                            rs.getString("product_name"),
+                            rs.getInt("total_units"),
+                            rs.getDouble("total_revenue")));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching top selling products: " + e.getMessage());
+        }
+        return list;
+    }
+
+    public java.util.Map<String, Double> getCategorySales() {
+        java.util.Map<String, Double> map = new java.util.LinkedHashMap<>();
+        String sql = "SELECT p.category, SUM(ii.total_price) AS category_revenue " +
+                     "FROM invoice_items ii " +
+                     "JOIN products p ON ii.product_id = p.product_id " +
+                     "GROUP BY p.category " +
+                     "ORDER BY category_revenue DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                map.put(rs.getString("category"), rs.getDouble("category_revenue"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error calculating category sales: " + e.getMessage());
+        }
+        return map;
+    }
 }
 

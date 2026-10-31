@@ -196,6 +196,21 @@ public class Supermarket {
         System.out.println("Total Invoices: " + count);
         System.out.printf("Total Sales   : ₹%.2f%n", total);
         System.out.printf("Average Bill  : ₹%.2f%n", average);
+
+        // Top selling products
+        List<String> topSelling = invoiceDAO.getTopSellingProducts(5);
+        if (!topSelling.isEmpty()) {
+            System.out.println("\n--- Top Selling Products ---");
+            topSelling.forEach(System.out::println);
+        }
+
+        // Category revenue
+        Map<String, Double> catSales = invoiceDAO.getCategorySales();
+        if (!catSales.isEmpty()) {
+            System.out.println("\n--- Category-Wise Revenue ---");
+            catSales.forEach((cat, rev) -> System.out.printf("%-15s: ₹%.2f%n", cat, rev));
+        }
+
         System.out.println("---------------------------------");
         checkLowStockAlerts(25);
         System.out.println("=================================");
