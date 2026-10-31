@@ -1,21 +1,29 @@
 package supermarket.db;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 public class DBConnection {
-    private static final String HOST = "localhost";
-    private static final int PORT = 3306;
-    private static final String DB_NAME = "supermarket_db";
-    private static final String DEFAULT_USER = "root";
-    private static final String DEFAULT_PASSWORD = "Hari123@";
+    private static final Properties props = new Properties();
 
-    private static final String SERVER_URL = "jdbc:mysql://" + HOST + ":" + PORT + "/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-    private static final String DB_URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    private static String host = "localhost";
+    private static int port = 3306;
+    private static String dbName = "supermarket_db";
+    private static String user = "root";
+    private static String password = "Hari123@";
+    private static boolean useSSL = false;
+    private static boolean allowPublicKeyRetrieval = true;
+    private static String serverTimezone = "UTC";
 
     static {
+        loadProperties();
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
@@ -23,40 +31,68 @@ public class DBConnection {
         }
     }
 
-    private static String getUser() {
-        String envUser = System.getenv("DB_USER");
-        return (envUser != null && !envUser.trim().isEmpty()) ? envUser : DEFAULT_USER;
+    private static void loadProperties() {
+        File propFile = new File("db.properties");
+        if (propFile.exists()) {
+            try (InputStream input = new FileInputStream(propFile)) {
+                props.load(input);
+            } catch (IOException e) {
+                System.err.println("Could not load db.properties: " + e.getMessage());
+            }
+        }
+
+        host = getVal("db.host", "DB_HOST", host);
+        String portStr = getVal("db.port", "DB_PORT", String.valueOf(port));
+        try {
+            port = Integer.parseInt(portStr);
+        } catch (NumberFormatException ignored) {}
+
+        dbName = getVal("db.name", "DB_NAME", dbName);
+        user = getVal("db.user", "DB_USER", user);
+        password = getVal("db.password", "DB_PASSWORD", password);
     }
 
-    private static String getPassword() {
-        String envPass = System.getenv("DB_PASSWORD");
-        return (envPass != null) ? envPass : DEFAULT_PASSWORD;
+    private static String getVal(String propKey, String envKey, String fallback) {
+        String env = System.getenv(envKey);
+        if (env != null && !env.trim().isEmpty()) return env.trim();
+        String p = props.getProperty(propKey);
+        if (p != null && !p.trim().isEmpty()) return p.trim();
+        return fallback;
+    }
+
+    public static String getDbUrl() {
+        return "jdbc:mysql://" + host + ":" + port + "/" + dbName +
+                "?useSSL=" + useSSL +
+                "&allowPublicKeyRetrieval=" + allowPublicKeyRetrieval +
+                "&serverTimezone=" + serverTimezone;
+    }
+
+    public static String getServerUrl() {
+        return "jdbc:mysql://" + host + ":" + port + "/?useSSL=" + useSSL +
+                "&allowPublicKeyRetrieval=" + allowPublicKeyRetrieval +
+                "&serverTimezone=" + serverTimezone;
     }
 
     public static Connection getConnection() throws SQLException {
         try {
-            return DriverManager.getConnection(DB_URL, getUser(), getPassword());
+            return DriverManager.getConnection(getDbUrl(), user, password);
         } catch (SQLException e) {
-            // If the database does not exist yet, initialize it
             initializeDatabase();
-            return DriverManager.getConnection(DB_URL, getUser(), getPassword());
+            return DriverManager.getConnection(getDbUrl(), user, password);
         }
     }
 
     public static synchronized void initializeDatabase() {
-        String user = getUser();
-        String pass = getPassword();
-
         // 1. Create database if it doesn't exist
-        try (Connection conn = DriverManager.getConnection(SERVER_URL, user, pass);
+        try (Connection conn = DriverManager.getConnection(getServerUrl(), user, password);
              Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
+            stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbName);
         } catch (SQLException e) {
-            System.err.println("Could not create database " + DB_NAME + ": " + e.getMessage());
+            System.err.println("Could not create database " + dbName + ": " + e.getMessage());
         }
 
         // 2. Create tables and initial data
-        try (Connection conn = DriverManager.getConnection(DB_URL, user, pass);
+        try (Connection conn = DriverManager.getConnection(getDbUrl(), user, password);
              Statement stmt = conn.createStatement()) {
 
             stmt.executeUpdate(
@@ -138,4 +174,3 @@ public class DBConnection {
         }
     }
 }
-
