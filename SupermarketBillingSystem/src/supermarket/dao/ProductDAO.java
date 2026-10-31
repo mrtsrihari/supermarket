@@ -122,6 +122,32 @@ public class ProductDAO {
         }
     }
 
+    public boolean restockProduct(int productId, int additionalQuantity) {
+        if (additionalQuantity <= 0) return false;
+        String sql = "UPDATE products SET quantity = quantity + ? WHERE product_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, additionalQuantity);
+            stmt.setInt(2, productId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error restocking product: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteProduct(int productId) {
+        String sql = "DELETE FROM products WHERE product_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, productId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting product: " + e.getMessage());
+            return false;
+        }
+    }
+
     private Product mapRowToProduct(ResultSet rs) throws SQLException {
         int id = rs.getInt("product_id");
         String name = rs.getString("name");
@@ -148,4 +174,3 @@ public class ProductDAO {
         }
     }
 }
-

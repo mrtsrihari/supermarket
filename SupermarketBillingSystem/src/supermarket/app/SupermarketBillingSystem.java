@@ -38,7 +38,9 @@ public class SupermarketBillingSystem {
             System.out.println("5. Create Bill");
             System.out.println("6. Display Customers");
             System.out.println("7. Sales Report");
-            System.out.println("8. Exit");
+            System.out.println("8. Restock Product");
+            System.out.println("9. Add New Product");
+            System.out.println("10. Exit");
             System.out.println("---------------------------------------------");
             int choice = readInt("Enter choice: ");
 
@@ -50,8 +52,10 @@ public class SupermarketBillingSystem {
                 case 5: createBill(); break;
                 case 6: shop.displayCustomers(); break;
                 case 7: shop.salesReport(); break;
-                case 8: running = false; System.out.println("Thank you for using Smart Supermarket Billing System!"); break;
-                default: System.out.println("Invalid choice. Please enter 1-8.");
+                case 8: restockMenu(); break;
+                case 9: addNewProductMenu(); break;
+                case 10: running = false; System.out.println("Thank you for using Smart Supermarket Billing System!"); break;
+                default: System.out.println("Invalid choice. Please enter 1-10.");
             }
         }
     }
@@ -133,6 +137,65 @@ public class SupermarketBillingSystem {
             } catch (IllegalArgumentException e) {
                 System.out.println(e.getMessage());
             }
+        }
+    }
+
+    private static void restockMenu() {
+        shop.displayProducts();
+        int id = readInt("Enter product ID to restock: ");
+        Product p = shop.findProduct(id);
+        if (p == null) {
+            System.out.println("Product not found with ID: " + id);
+            return;
+        }
+        int addQty = readInt("Enter quantity to add: ");
+        if (addQty <= 0) {
+            System.out.println("Quantity must be positive.");
+            return;
+        }
+        boolean ok = shop.restockProduct(id, addQty);
+        if (ok) {
+            System.out.println("✓ Successfully restocked " + p.getName() + " (+" + addQty + " units).");
+        } else {
+            System.out.println("✗ Failed to update stock in database.");
+        }
+    }
+
+    private static void addNewProductMenu() {
+        System.out.println("\n--- Add New Product ---");
+        System.out.println("Select Category: 1. Grocery  2. Electronic  3. Clothing");
+        int catChoice = readInt("Category choice: ");
+        System.out.print("Product Name: ");
+        String name = input.nextLine().trim();
+        double price = readDouble("Price: ");
+        int stock = readInt("Stock Quantity: ");
+
+        Product newProduct = null;
+        switch (catChoice) {
+            case 1:
+                System.out.print("Expiry Date (DD-MM-YYYY): ");
+                String expiry = input.nextLine().trim();
+                newProduct = new GroceryProduct(name, price, stock, expiry);
+                break;
+            case 2:
+                int warranty = readInt("Warranty (months): ");
+                newProduct = new ElectronicProduct(name, price, stock, warranty);
+                break;
+            case 3:
+                System.out.print("Size (e.g. S, M, L, XL, 32, 34): ");
+                String size = input.nextLine().trim();
+                newProduct = new ClothingProduct(name, price, stock, size);
+                break;
+            default:
+                System.out.println("Invalid category selected.");
+                return;
+        }
+
+        try {
+            shop.addProduct(newProduct);
+            System.out.println("✓ Product '" + name + "' added to database inventory.");
+        } catch (Exception e) {
+            System.out.println("Error adding product: " + e.getMessage());
         }
     }
 

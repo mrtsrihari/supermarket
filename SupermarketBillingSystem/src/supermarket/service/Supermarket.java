@@ -36,6 +36,14 @@ public class Supermarket {
         productDAO.addProduct(product);
     }
 
+    public boolean restockProduct(int productId, int quantity) {
+        return productDAO.restockProduct(productId, quantity);
+    }
+
+    public boolean deleteProduct(int productId) {
+        return productDAO.deleteProduct(productId);
+    }
+
     public void addCustomer(Customer customer) {
         int id = customerDAO.addCustomer(customer);
         if (id > 0) {
