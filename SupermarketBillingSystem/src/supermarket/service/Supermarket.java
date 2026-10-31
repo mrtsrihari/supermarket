@@ -171,6 +171,19 @@ public class Supermarket {
         list.forEach(System.out::println);
     }
 
+    public void checkLowStockAlerts(int threshold) {
+        List<Product> lowStock = productDAO.getLowStockProducts(threshold);
+        if (lowStock.isEmpty()) {
+            System.out.println("✓ All product inventory levels are healthy (above " + threshold + " units).");
+            return;
+        }
+        System.out.println("\n⚠ ATTENTION: LOW STOCK WARNING (" + lowStock.size() + " item(s) <= " + threshold + " units)");
+        System.out.printf("%-6s %-22s %-14s %-12s %-6s%n", "ID", "Name", "Category", "Price", "Stock");
+        for (Product p : lowStock) {
+            System.out.println(p);
+        }
+    }
+
     public void salesReport() {
         int count = invoiceDAO.getInvoiceCount();
         if (count == 0) {
@@ -183,6 +196,8 @@ public class Supermarket {
         System.out.println("Total Invoices: " + count);
         System.out.printf("Total Sales   : ₹%.2f%n", total);
         System.out.printf("Average Bill  : ₹%.2f%n", average);
+        System.out.println("---------------------------------");
+        checkLowStockAlerts(25);
         System.out.println("=================================");
     }
 }

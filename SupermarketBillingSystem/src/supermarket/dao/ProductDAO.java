@@ -148,6 +148,26 @@ public class ProductDAO {
         }
     }
 
+    public List<Product> getLowStockProducts(int threshold) {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT product_id, name, category, price, quantity, extra_attribute FROM products WHERE quantity <= ? ORDER BY quantity ASC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, threshold);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Product p = mapRowToProduct(rs);
+                    if (p != null) products.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching low-stock products: " + e.getMessage());
+        }
+        return products;
+    }
+
     private Product mapRowToProduct(ResultSet rs) throws SQLException {
         int id = rs.getInt("product_id");
         String name = rs.getString("name");
